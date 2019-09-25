@@ -25,19 +25,18 @@
         android:layout_marginTop="16dp"
         android:ems="10"
         android:inputType="textPostalAddress"
+        android:textColor="#FFFFFF"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
-        android:layout_width="0dp"
+        android:layout_width="411dp"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHeight_percent=".9"
-        app:layout_constraintStart_toStartOf="parent"
-        tools:context=".MapsActivity" />
+        tools:context=".MapsActivity"
+        tools:layout_editor_absoluteY="73dp" />
 
     <Button
         android:id="@+id/buttonChooseImage"
@@ -81,9 +80,63 @@
         android:layout_marginTop="116dp"
         android:layout_marginEnd="281dp"
         android:text="Lock Overlay"
+        android:textColor="#FFFFFF"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <CheckBox
+        android:id="@+id/toggleMarkers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="19dp"
+        android:layout_marginEnd="281dp"
+        android:text="Add Markers"
+        android:textColor="#FFFFFF"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toggleLock" />
+
+    <RadioGroup
+        android:layout_width="119dp"
+        android:layout_height="127dp"
+        android:layout_marginEnd="15dp"
+        android:layout_marginBottom="15dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <RadioButton
+            android:id="@+id/radioDoors"
+            style="@style/Widget.AppCompat.CompoundButton.RadioButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mark Doors"
+            android:textColor="#FFFFFF" />
+
+        <RadioButton
+            android:id="@+id/radioCorners"
+            style="@style/Widget.AppCompat.CompoundButton.RadioButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mark Corners"
+            android:textColor="#FFFFFF" />
+
+        <RadioButton
+            android:id="@+id/radioStairs"
+            style="@style/Widget.AppCompat.CompoundButton.RadioButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mark Stairs"
+            android:textColor="#FFFFFF" />
+
+        <RadioButton
+            android:id="@+id/radioElevators"
+            style="@style/Widget.AppCompat.CompoundButton.RadioButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mark Elevators"
+            android:textColor="#FFFFFF" />
+    </RadioGroup>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
