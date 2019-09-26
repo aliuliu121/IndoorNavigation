@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.RadioButton;
 import android.widget.SeekBar;
 
 import androidx.fragment.app.FragmentActivity;
@@ -21,11 +22,13 @@ import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-public class MapsActivity extends FragmentActivity implements SeekBar.OnSeekBarChangeListener, OnMapReadyCallback, GoogleMap.OnCameraMoveListener {
+public class MapsActivity extends FragmentActivity implements SeekBar.OnSeekBarChangeListener, OnMapReadyCallback, GoogleMap.OnCameraMoveListener, GoogleMap.OnMapLongClickListener {
 
     private GoogleMap mMap;
 
@@ -39,7 +42,17 @@ public class MapsActivity extends FragmentActivity implements SeekBar.OnSeekBarC
 
     private CheckBox toggleOverlayLock;
 
+    private CheckBox toggleMarkerAdjustment;
+
     private UiSettings mUiSettings;
+
+    private ArrayList<MarkerOptions> markersList;
+
+    private RadioButton radioCorners;
+    private RadioButton radioDoors;
+    private RadioButton radioStairs;
+    private RadioButton radioElevators;
+
 
     public void onMapSearch(View view) {
         EditText locationSearch = findViewById(R.id.locationText);
@@ -92,6 +105,26 @@ public class MapsActivity extends FragmentActivity implements SeekBar.OnSeekBarC
                 }
             }
         });
+
+        findViewById(R.id.markers).setVisibility(View.INVISIBLE);
+
+        toggleMarkerAdjustment = findViewById(R.id.toggleMarkers);
+        toggleMarkerAdjustment.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (toggleMarkerAdjustment.isChecked()) {
+                    findViewById(R.id.markers).setVisibility(View.VISIBLE);
+                } else {
+                    findViewById(R.id.markers).setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+
+        markersList = new ArrayList();
+        radioCorners = (RadioButton) findViewById(R.id.radioCorners);
+        radioDoors = (RadioButton) findViewById(R.id.radioDoors);
+        radioStairs = (RadioButton) findViewById(R.id.radioStairs);
+        radioElevators = (RadioButton) findViewById(R.id.radioElevators);
     }
 
     @Override
@@ -159,12 +192,40 @@ public class MapsActivity extends FragmentActivity implements SeekBar.OnSeekBarC
         mRotationBar.setOnSeekBarChangeListener(this);
         mScaleBar.setOnSeekBarChangeListener(this);
         mMap.setOnCameraMoveListener(this);
+        mMap.setOnMapLongClickListener(this);
     }
 
     @Override
     public void onCameraMove() {
         if (!((CheckBox) findViewById(R.id.toggleLock)).isChecked()) {
             mGroundOverlay.setPosition(mMap.getCameraPosition().target);
+        }
+    }
+
+    @Override
+    public void onMapLongClick(LatLng latLng) {
+        if (toggleMarkerAdjustment.isChecked()) {
+            MarkerOptions newMarker = new MarkerOptions().position(latLng);
+            if (radioCorners.isChecked()) {
+                newMarker.title("Corner");
+                mMap.addMarker(newMarker);
+                markersList.add(newMarker);
+            }
+            else if (radioDoors.isChecked()) {
+                newMarker.title("Door");
+                mMap.addMarker(newMarker);
+                markersList.add(newMarker);
+            }
+            else if (radioElevators.isChecked()) {
+                newMarker.title("Elevator");
+                mMap.addMarker(newMarker);
+                markersList.add(newMarker);
+            }
+            else if (radioStairs.isChecked()) {
+                newMarker.title("Stairs");
+                mMap.addMarker(newMarker);
+                markersList.add(newMarker);
+            }
         }
     }
 }
