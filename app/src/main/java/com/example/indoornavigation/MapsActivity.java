@@ -1,9 +1,11 @@
 package com.example.indoornavigation;
 
+import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.RadioButton;
@@ -22,11 +24,17 @@ import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 public class MapsActivity extends FragmentActivity implements SeekBar.OnSeekBarChangeListener, OnMapReadyCallback, GoogleMap.OnCameraMoveListener, GoogleMap.OnMapLongClickListener {
 
@@ -46,12 +54,21 @@ public class MapsActivity extends FragmentActivity implements SeekBar.OnSeekBarC
 
     private UiSettings mUiSettings;
 
-    private ArrayList<MarkerOptions> markersList;
+    private Stack<Marker> markersStack;
 
     private RadioButton radioCorners;
     private RadioButton radioDoors;
     private RadioButton radioStairs;
     private RadioButton radioElevators;
+
+    private Button undoMarker;
+
+    private Button undoPath;
+    private CheckBox addPath;
+    private Polyline mapPath;
+
+    private Polygon validSpace;
+
 
 
     public void onMapSearch(View view) {
@@ -107,6 +124,7 @@ public class MapsActivity extends FragmentActivity implements SeekBar.OnSeekBarC
         });
 
         findViewById(R.id.markers).setVisibility(View.INVISIBLE);
+        findViewById(R.id.buttonUndo).setVisibility(View.INVISIBLE);
 
         toggleMarkerAdjustment = findViewById(R.id.toggleMarkers);
         toggleMarkerAdjustment.setOnClickListener(new View.OnClickListener() {
@@ -114,17 +132,75 @@ public class MapsActivity extends FragmentActivity implements SeekBar.OnSeekBarC
             public void onClick(View view) {
                 if (toggleMarkerAdjustment.isChecked()) {
                     findViewById(R.id.markers).setVisibility(View.VISIBLE);
+                    findViewById(R.id.buttonUndo).setVisibility(View.VISIBLE);
                 } else {
                     findViewById(R.id.markers).setVisibility(View.INVISIBLE);
+                    findViewById(R.id.buttonUndo).setVisibility(View.INVISIBLE);
                 }
             }
         });
 
-        markersList = new ArrayList();
+        markersStack = new Stack();
         radioCorners = (RadioButton) findViewById(R.id.radioCorners);
         radioDoors = (RadioButton) findViewById(R.id.radioDoors);
         radioStairs = (RadioButton) findViewById(R.id.radioStairs);
         radioElevators = (RadioButton) findViewById(R.id.radioElevators);
+
+        undoMarker = (Button) findViewById(R.id.buttonUndo);
+        undoMarker.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!markersStack.isEmpty()) {
+                    markersStack.pop().remove();
+                }
+            }
+        });
+
+        findViewById(R.id.undoPath).setVisibility(View.INVISIBLE);
+
+        addPath = findViewById(R.id.togglePath);
+        addPath.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (addPath.isChecked()) {
+                    findViewById(R.id.undoPath).setVisibility(View.VISIBLE);
+                } else {
+                    findViewById(R.id.undoPath).setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+
+        undoPath = (Button) findViewById(R.id.undoPath);
+        undoPath.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                List<LatLng> coords = mapPath.getPoints();
+                if (!coords.isEmpty()) {
+                    coords.remove(coords.size()-1);
+                    mapPath.setPoints(coords);
+                }
+            }
+        });
+
+        findViewById(R.id.convertLine).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                List<LatLng> coords = mapPath.getPoints();
+                if (!coords.isEmpty()) {
+                    mapPath.setPoints(new ArrayList<LatLng>());
+                    coords.add(coords.get(0));
+                    if (validSpace == null) {
+                        validSpace = mMap.addPolygon(new PolygonOptions()
+                                .add(new LatLng(0, 0)).fillColor(Color.argb(20, 255, 0, 0)).strokeColor(3).strokeColor(Color.RED));
+                        validSpace.setPoints(coords);
+                    } else {
+                        List<List<LatLng>> holes = validSpace.getHoles();
+                        holes.add(coords);
+                        validSpace.setHoles(holes);
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -181,7 +257,7 @@ public class MapsActivity extends FragmentActivity implements SeekBar.OnSeekBarC
         mGroundOverlay = mMap.addGroundOverlay(new GroundOverlayOptions()
                 .image(BitmapDescriptorFactory.fromResource(R.drawable.uc_floor1))
                 .bearing(0)
-                .transparency(0.3f)
+                .transparency(0.5f)
                 .position(UC, 100f));
 
         mMap.setMapStyle(
@@ -193,6 +269,10 @@ public class MapsActivity extends FragmentActivity implements SeekBar.OnSeekBarC
         mScaleBar.setOnSeekBarChangeListener(this);
         mMap.setOnCameraMoveListener(this);
         mMap.setOnMapLongClickListener(this);
+
+        mapPath = mMap.addPolyline(new PolylineOptions()
+                .width(5).color(Color.RED));
+
     }
 
     @Override
@@ -208,24 +288,26 @@ public class MapsActivity extends FragmentActivity implements SeekBar.OnSeekBarC
             MarkerOptions newMarker = new MarkerOptions().position(latLng);
             if (radioCorners.isChecked()) {
                 newMarker.title("Corner");
-                mMap.addMarker(newMarker);
-                markersList.add(newMarker);
+                markersStack.push(mMap.addMarker(newMarker));
             }
             else if (radioDoors.isChecked()) {
                 newMarker.title("Door");
-                mMap.addMarker(newMarker);
-                markersList.add(newMarker);
+                markersStack.push(mMap.addMarker(newMarker));
             }
             else if (radioElevators.isChecked()) {
                 newMarker.title("Elevator");
-                mMap.addMarker(newMarker);
-                markersList.add(newMarker);
+                markersStack.push(mMap.addMarker(newMarker));
             }
             else if (radioStairs.isChecked()) {
                 newMarker.title("Stairs");
-                mMap.addMarker(newMarker);
-                markersList.add(newMarker);
+                markersStack.push(mMap.addMarker(newMarker));
             }
+        }
+
+        if (addPath.isChecked()) {
+            List<LatLng> coord = mapPath.getPoints();
+            coord.add(latLng);
+            mapPath.setPoints(coord);
         }
     }
 }
